@@ -81,7 +81,7 @@ A full-stack AI application that allows users to build a personalized Digital Cl
                      Retrieved Context
                           |
                           v
-                 OpenAI Compatible LLM
+                        LLM
                           |
                           v
                    AI Generated Response
