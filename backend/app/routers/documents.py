@@ -115,7 +115,7 @@ def list_documents(clone_id: int, user=Depends(get_current_user)):
 
 
 class ConfirmIn(BaseModel):
-    confirmed_text: str
+    confirmed_text: str | None = None
 
 
 @router.post("/{document_id}/confirm")
@@ -123,15 +123,18 @@ def confirm_document(document_id: int, payload: ConfirmIn, user=Depends(get_curr
     """FR-1.5: owner reviews/corrects extracted content before it is embedded."""
     with get_conn() as conn:
         doc = conn.execute(
-            """SELECT d.id, d.clone_id, c.owner_id FROM documents d
+            """SELECT d.id, d.clone_id, d.confirmed_text, d.raw_extracted_text, c.owner_id FROM documents d
                JOIN clones c ON d.clone_id = c.id WHERE d.id=?""",
             (document_id,),
         ).fetchone()
         if not doc or doc["owner_id"] != user["id"]:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
+        confirmed_text = payload.confirmed_text
+        if confirmed_text is None:
+            confirmed_text = doc["confirmed_text"] or doc["raw_extracted_text"] or ""
         conn.execute(
             "UPDATE documents SET confirmed_text=?, confirmed=1, status='confirmed' WHERE id=?",
-            (payload.confirmed_text, document_id),
+            (confirmed_text, document_id),
         )
     return {"ok": True}
 

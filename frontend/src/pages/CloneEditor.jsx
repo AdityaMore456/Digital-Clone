@@ -55,10 +55,15 @@ export default function CloneEditor() {
     }
   }
 
-  async function confirmDoc(docId) {
-    const text = editingText[docId]
-    await apiFetch(`/documents/${docId}/confirm`, { method: 'POST', body: { confirmed_text: text } })
-    loadAll()
+  async function confirmDoc(docId, fallbackText = '') {
+    const text = editingText[docId] ?? fallbackText ?? ''
+    try {
+      await apiFetch(`/documents/${docId}/confirm`, { method: 'POST', body: { confirmed_text: text } })
+      setStatus('Document confirmed.')
+      loadAll()
+    } catch (err) {
+      setStatus('Error: ' + err.message)
+    }
   }
 
   async function deleteDoc(docId) {
@@ -125,11 +130,11 @@ export default function CloneEditor() {
             </p>
             <textarea
               rows={6}
-              defaultValue={d.confirmed_text || d.raw_extracted_text || ''}
+              value={editingText[d.id] ?? d.confirmed_text ?? d.raw_extracted_text ?? ''}
               onChange={(e) => setEditingText((s) => ({ ...s, [d.id]: e.target.value }))}
             />
-            <button onClick={() => confirmDoc(d.id)}>Confirm content</button>{' '}
-            <button className="secondary" onClick={() => deleteDoc(d.id)}>Delete</button>
+            <button type="button" onClick={() => confirmDoc(d.id, d.confirmed_text || d.raw_extracted_text || '')}>Confirm content</button>{' '}
+            <button type="button" className="secondary" onClick={() => deleteDoc(d.id)}>Delete</button>
           </div>
         ))}
       </div>
